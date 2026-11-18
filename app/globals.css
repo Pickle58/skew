@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --skew-ink: #00000f;
+  --skew-muted: #68728d;
+  --skew-surface: #f6f6f6;
+  --skew-panel: #ffffff;
+  --skew-panel-muted: #f0f0f0;
+  --skew-line: #e5e7eb;
+  --skew-left: #b42318;
+  --skew-right: #1d4ed8;
+  --skew-footer-muted: #c8cdd8;
+  --skew-diagram: #e4e4f6;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-poppins), sans-serif;
+  --color-ink: var(--skew-ink);
+  --color-muted: var(--skew-muted);
+  --color-surface: var(--skew-surface);
+  --color-panel: var(--skew-panel);
+  --color-panel-muted: var(--skew-panel-muted);
+  --color-line: var(--skew-line);
+  --color-bias-left: var(--skew-left);
+  --color-bias-right: var(--skew-right);
+  --color-bias-center: var(--skew-line);
+  --color-footer-muted: var(--skew-footer-muted);
+  --color-diagram: var(--skew-diagram);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 12px 24px rgb(0 0 0 / 0.12);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scrollbar-color: #c5c8d0 var(--skew-surface);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--skew-surface);
+  color: var(--skew-ink);
+  font-family: var(--font-poppins), sans-serif;
+}
+
+::selection {
+  background: var(--skew-right);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--skew-right);
+  outline-offset: 2px;
 }

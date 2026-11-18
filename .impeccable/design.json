@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-16T16:45:00.000Z",
+  "title": "Design System: Skew",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Near-Black Ink",
+        "canonical": "#00000f",
+        "tonalRamp": ["oklch(15% 0.018 264.1)", "oklch(26% 0.030 264.1)", "oklch(38% 0.045 264.1)", "oklch(50% 0.053 264.1)", "oklch(62% 0.053 264.1)", "oklch(74% 0.053 264.1)", "oklch(85% 0.036 264.1)", "oklch(95% 0.012 264.1)"]
+      },
+      "muted": {
+        "role": "secondary",
+        "displayName": "Slate Mute",
+        "canonical": "#68728d",
+        "tonalRamp": ["oklch(15% 0.015 269.0)", "oklch(26% 0.025 269.0)", "oklch(38% 0.037 269.0)", "oklch(50% 0.044 269.0)", "oklch(62% 0.044 269.0)", "oklch(74% 0.044 269.0)", "oklch(85% 0.030 269.0)", "oklch(95% 0.010 269.0)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Sheet Gray",
+        "canonical": "#f6f6f6",
+        "tonalRamp": ["oklch(15% 0.000 0.0)", "oklch(26% 0.000 0.0)", "oklch(38% 0.000 0.0)", "oklch(50% 0.000 0.0)", "oklch(62% 0.000 0.0)", "oklch(74% 0.000 0.0)", "oklch(85% 0.000 0.0)", "oklch(95% 0.000 0.0)"]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(15% 0.000 0.0)", "oklch(26% 0.000 0.0)", "oklch(38% 0.000 0.0)", "oklch(50% 0.000 0.0)", "oklch(62% 0.000 0.0)", "oklch(74% 0.000 0.0)", "oklch(85% 0.000 0.0)", "oklch(95% 0.000 0.0)"]
+      },
+      "panel-muted": {
+        "role": "neutral",
+        "displayName": "Pressed Gray",
+        "canonical": "#f0f0f0",
+        "tonalRamp": ["oklch(15% 0.000 0.0)", "oklch(26% 0.000 0.0)", "oklch(38% 0.000 0.0)", "oklch(50% 0.000 0.0)", "oklch(62% 0.000 0.0)", "oklch(74% 0.000 0.0)", "oklch(85% 0.000 0.0)", "oklch(95% 0.000 0.0)"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e5e7eb",
+        "tonalRamp": ["oklch(15% 0.002 264.5)", "oklch(26% 0.003 264.5)", "oklch(38% 0.005 264.5)", "oklch(50% 0.006 264.5)", "oklch(62% 0.006 264.5)", "oklch(74% 0.006 264.5)", "oklch(85% 0.004 264.5)", "oklch(95% 0.001 264.5)"]
+      },
+      "bias-left": {
+        "role": "semantic",
+        "displayName": "Bias Red",
+        "canonical": "#b42318",
+        "tonalRamp": ["oklch(15% 0.061 29.5)", "oklch(26% 0.105 29.5)", "oklch(38% 0.154 29.5)", "oklch(50% 0.182 29.5)", "oklch(62% 0.182 29.5)", "oklch(74% 0.182 29.5)", "oklch(85% 0.124 29.5)", "oklch(95% 0.041 29.5)"]
+      },
+      "bias-center": {
+        "role": "semantic",
+        "displayName": "Bias Center",
+        "canonical": "#e5e7eb",
+        "tonalRamp": ["oklch(15% 0.002 264.5)", "oklch(26% 0.003 264.5)", "oklch(38% 0.005 264.5)", "oklch(50% 0.006 264.5)", "oklch(62% 0.006 264.5)", "oklch(74% 0.006 264.5)", "oklch(85% 0.004 264.5)", "oklch(95% 0.001 264.5)"]
+      },
+      "bias-right": {
+        "role": "semantic",
+        "displayName": "Bias Blue",
+        "canonical": "#1d4ed8",
+        "tonalRamp": ["oklch(15% 0.072 264.4)", "oklch(26% 0.125 264.4)", "oklch(38% 0.183 264.4)", "oklch(50% 0.217 264.4)", "oklch(62% 0.217 264.4)", "oklch(74% 0.217 264.4)", "oklch(85% 0.148 264.4)", "oklch(95% 0.049 264.4)"]
+      },
+      "footer-muted": {
+        "role": "neutral",
+        "displayName": "Footer Gray",
+        "canonical": "#c8cdd8",
+        "tonalRamp": ["oklch(15% 0.005 266.3)", "oklch(26% 0.009 266.3)", "oklch(38% 0.014 266.3)", "oklch(50% 0.016 266.3)", "oklch(62% 0.016 266.3)", "oklch(74% 0.016 266.3)", "oklch(85% 0.011 266.3)", "oklch(95% 0.004 266.3)"]
+      },
+      "diagram": {
+        "role": "neutral",
+        "displayName": "Diagram Lavender",
+        "canonical": "#e4e4f6",
+        "tonalRamp": ["oklch(15% 0.008 285.9)", "oklch(26% 0.014 285.9)", "oklch(38% 0.020 285.9)", "oklch(50% 0.024 285.9)", "oklch(62% 0.024 285.9)", "oklch(74% 0.024 285.9)", "oklch(85% 0.016 285.9)", "oklch(95% 0.005 285.9)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The Skew wordmark at 40px extrabold. The footer lockup uses the same weight at 22px." },
+      "news-mark": { "displayName": "News mark", "purpose": "The smaller News mark beside Skew, 14px medium on the brand lockup and 11px on the footer." },
+      "headline": { "displayName": "Headline", "purpose": "Page and screen titles, 32px bold." },
+      "title": { "displayName": "Title", "purpose": "Section titles, 24px semibold." },
+      "card-title": { "displayName": "Card title", "purpose": "Article card headlines, 20px semibold." },
+      "subheading": { "displayName": "Subheading", "purpose": "Subheads, 16px medium." },
+      "body-large": { "displayName": "Body large", "purpose": "Important reading copy, 16px regular." },
+      "body": { "displayName": "Body", "purpose": "Default reading copy, 14px regular." },
+      "body-small": { "displayName": "Body small", "purpose": "Supporting sentences and the card deck, 13px regular." },
+      "label": { "displayName": "Label", "purpose": "Button and chip text, 13px medium." },
+      "caption": { "displayName": "Caption", "purpose": "Category lines, timestamps, and the meter scale, 11px regular." }
+    },
+    "shadows": [
+      { "name": "small", "value": "0 1px 2px rgb(0 0 0 / 0.05)", "purpose": "The photo info pip, and the first step of the shadow scale." },
+      { "name": "medium", "value": "0 4px 12px rgb(0 0 0 / 0.08)", "purpose": "The middle step of the shadow scale." },
+      { "name": "large", "value": "0 12px 24px rgb(0 0 0 / 0.12)", "purpose": "The largest step of the shadow scale." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "700", "value": "700px" },
+      { "name": "720", "value": "720px" },
+      { "name": "900", "value": "900px" },
+      { "name": "1200", "value": "1200px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled ink pill for the primary action. Hover keeps the same fill.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary\">Button</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 9999px; background: var(--skew-ink); color: var(--skew-panel); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-btn-primary:hover { background: var(--skew-ink); color: var(--skew-panel); } .ds-btn-primary:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Outline Button",
+      "kind": "button",
+      "refersTo": "button-primary-outline",
+      "description": "White pill with an ink border. Hover does not change it.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary-outline\">Button</button>",
+      "css": ".ds-btn-primary-outline { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; border: 1px solid var(--skew-ink); border-radius: 9999px; background: var(--skew-panel); color: var(--skew-ink); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-btn-primary-outline:hover { background: var(--skew-panel); color: var(--skew-ink); } .ds-btn-primary-outline:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "White pill with a hairline border. Hover fills with pressed gray. Outline matches this default.",
+      "html": "<button type=\"button\" class=\"ds-btn-secondary\">Button</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; border: 1px solid var(--skew-line); border-radius: 9999px; background: var(--skew-panel); color: var(--skew-ink); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-btn-secondary:hover { background: var(--skew-panel-muted); color: var(--skew-ink); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Borderless text action. Hover turns the type bias blue.",
+      "html": "<button type=\"button\" class=\"ds-btn-text\">Button</button>",
+      "css": ".ds-btn-text { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 4px; border: 1px solid transparent; border-radius: 9999px; background: transparent; color: var(--skew-ink); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-btn-text:hover { color: var(--skew-right); } .ds-btn-text:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Disabled Button",
+      "kind": "button",
+      "refersTo": "button-disabled",
+      "description": "Shared disabled treatment for every variant: pressed gray fill and slate type.",
+      "html": "<button type=\"button\" class=\"ds-btn-disabled\" disabled>Button</button>",
+      "css": ".ds-btn-disabled { display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 9999px; background: var(--skew-panel-muted); color: var(--skew-muted); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-btn-disabled:hover, .ds-btn-disabled:disabled { background: var(--skew-panel-muted); color: var(--skew-muted); } .ds-btn-disabled:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Category pill with a trailing plus. No separate hover or selected state.",
+      "html": "<button type=\"button\" class=\"ds-chip\">World Cup <svg class=\"ds-chip-plus\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14\"></path><path d=\"M5 12h14\"></path></svg></button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--skew-line); border-radius: 9999px; background: var(--skew-panel); color: var(--skew-ink); font-family: var(--font-poppins), sans-serif; font-size: 13px; font-weight: 500; line-height: 1; } .ds-chip-plus { width: 12px; height: 12px; } .ds-chip:hover { background: var(--skew-panel); color: var(--skew-ink); } .ds-chip:focus-visible { outline: 2px solid var(--skew-right); outline-offset: 2px; }"
+    },
+    {
+      "name": "Bias Meter",
+      "kind": "custom",
+      "description": "Three-part pill for left, center, and right shares. Reference split is 25 / 50 / 25.",
+      "html": "<div class=\"ds-meter-wrap\"><div class=\"ds-meter\" role=\"img\" aria-label=\"Left 25 percent, center 50 percent, right 25 percent\"><div class=\"ds-meter-left\">Left 25%</div><div class=\"ds-meter-center\">Center 50%</div><div class=\"ds-meter-right\">Right 25%</div></div><div class=\"ds-meter-scale\"><span>0%</span><span>50%</span><span>100%</span></div></div>",
+      "css": ".ds-meter { display: flex; overflow: hidden; height: 32px; border-radius: 9999px; font-family: var(--font-poppins), sans-serif; font-size: 12px; font-weight: 500; } .ds-meter-left, .ds-meter-center, .ds-meter-right { display: flex; align-items: center; justify-content: center; padding: 0 4px; white-space: nowrap; } .ds-meter-left { flex: 25 1 auto; background: var(--skew-left); color: var(--skew-panel); } .ds-meter-center { flex: 50 1 auto; background: var(--skew-line); color: var(--skew-ink); } .ds-meter-right { flex: 25 1 auto; background: var(--skew-right); color: var(--skew-panel); } .ds-meter-scale { display: flex; justify-content: space-between; margin-top: 6px; color: var(--skew-muted); font-family: var(--font-poppins), sans-serif; font-size: 11px; line-height: 1.4; }"
+    },
+    {
+      "name": "Article Card",
+      "kind": "card",
+      "description": "Flat article specimen: photograph, caption, title, deck, card-size meter, and meta.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-media\"><span class=\"ds-card-info\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 16v-4\"></path><path d=\"M12 8h.01\"></path></svg></span></div><div class=\"ds-card-copy\"><p class=\"ds-card-category\">Politics · United States</p><h3 class=\"ds-card-title\">Trump Sends Iran Revised Peace Proposal With Tougher Terms: Report</h3><p class=\"ds-card-deck\">The proposal includes stricter limits on uranium enrichment and enhanced verification measures.</p><div class=\"ds-card-meter\" role=\"img\" aria-label=\"Left 25 percent, center 50 percent, right 25 percent\"><div class=\"ds-card-left\">Left 25%</div><div class=\"ds-card-center\">Center 50%</div><div class=\"ds-card-right\">Right 25%</div></div><p class=\"ds-card-meta\"><span>2h ago</span><span>12 min read</span></p></div></article>",
+      "css": ".ds-card { display: flex; gap: 16px; font-family: var(--font-poppins), sans-serif; } .ds-card-media { position: relative; width: 132px; height: 108px; flex-shrink: 0; border-radius: 12px; background: var(--skew-panel-muted); } .ds-card-info { position: absolute; top: 6px; right: 6px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 9999px; background: var(--skew-panel); color: var(--skew-ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); } .ds-card-info svg { width: 12px; height: 12px; } .ds-card-copy { min-width: 0; flex: 1; } .ds-card-category { margin: 0; color: var(--skew-muted); font-size: 11px; line-height: 1.4; } .ds-card-title { margin: 4px 0 0; color: var(--skew-ink); font-size: 20px; font-weight: 600; line-height: 1.3; } .ds-card-deck { margin: 8px 0 0; color: var(--skew-muted); font-size: 13px; line-height: 1.6; } .ds-card-meter { display: flex; overflow: hidden; height: 24px; margin-top: 12px; border-radius: 9999px; font-size: 10px; font-weight: 500; } .ds-card-left, .ds-card-center, .ds-card-right { display: flex; align-items: center; justify-content: center; padding: 0 4px; white-space: nowrap; } .ds-card-left { flex: 25 1 auto; background: var(--skew-left); color: var(--skew-panel); } .ds-card-center { flex: 50 1 auto; background: var(--skew-line); color: var(--skew-ink); } .ds-card-right { flex: 25 1 auto; background: var(--skew-right); color: var(--skew-panel); } .ds-card-meta { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0 0; color: var(--skew-muted); font-size: 11px; line-height: 1.4; }"
+    },
+    {
+      "name": "Wordmark",
+      "kind": "custom",
+      "refersTo": "wordmark",
+      "description": "Skew in extrabold with the smaller News mark on the baseline.",
+      "html": "<p class=\"ds-wordmark\"><span class=\"ds-wordmark-name\">Skew</span><span class=\"ds-wordmark-news\">News</span></p>",
+      "css": ".ds-wordmark { display: flex; align-items: flex-end; gap: 6px; margin: 0; } .ds-wordmark-name { color: var(--skew-ink); font-family: var(--font-poppins), sans-serif; font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; } .ds-wordmark-news { margin: 0 0 7px; color: var(--skew-muted); font-family: var(--font-poppins), sans-serif; font-size: 14px; font-weight: 500; line-height: 1; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "White sheet panel with a 12px corner, a hairline border, and 20px padding.",
+      "html": "<section class=\"ds-panel\"><p class=\"ds-panel-copy\">Balanced news coverage, powered by AI.</p></section>",
+      "css": ".ds-panel { border: 1px solid var(--skew-line); border-radius: 12px; background: var(--skew-panel); color: var(--skew-ink); padding: 20px; } .ds-panel-copy { margin: 0; font-family: var(--font-poppins), sans-serif; font-size: 14px; line-height: 1.6; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Measured Sheet",
+    "overview": "Skew reads as a measured sheet. Poppins is the only typeface. The ground is sheet gray, panels are white, corners on those panels are 12px, and a 1px hairline separates a panel from the ground. Near-black ink does the reading and fills the primary button. Muted slate carries supporting text.\n\nThe strong color sits in the bias bar. The left share is red, the center share is the hairline gray, and the right share is blue. That blue is also the focus ring, the text-selection color, and the text-button hover. Buttons, chips, and the meter are pills. Panels sit flat. A small, medium, and large shadow scale is part of the system, and the sheet uses the small shadow on the round info pip over the card photograph.\n\nThe wordmark is Skew, set extrabold, with a smaller News mark in medium weight on the same baseline. The lockup carries the line “Balanced news coverage, powered by AI.” The ink footer repeats the lockup in white and footer gray and closes with “Stay consistent. Stay unbiased.”",
+    "keyCharacteristics": [
+      "Poppins only, at weights 400, 500, 600, 700, and 800",
+      "Sheet gray ground, white panels, a 1px hairline, and 12px panel corners",
+      "Near-black ink for reading text and the filled button",
+      "Full pills for buttons, chips, and the bias meter",
+      "Bias bar in left red, center hairline, and right blue",
+      "Flat panels, with a three-step shadow scale beside them"
+    ],
+    "rules": [
+      {
+        "name": "The Bias Bar Rule",
+        "body": "The meter is three shares. Left is Bias Red (#b42318) with white labels. Center is the hairline (#e5e7eb) with ink labels. Right is Bias Blue (#1d4ed8) with white labels. Bias blue is also the 2px focus ring, the text-selection background, and the text-button hover. Bias red stays on the left share.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink Fill Rule",
+        "body": "The filled primary control is near-black ink with white type. Slate mute is for support, not for the primary action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Poppins Rule",
+        "body": "Poppins is the only typeface. The loaded weights are 400, 500, 600, 700, and 800. There is no second family and no monospace role.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wordmark Rule",
+        "body": "Skew is 40px extrabold, tracking -0.03em, line-height 1. News is 14px medium on the same baseline, 6px away, dropped 7px so the two marks align. On the ink footer, Skew is 22px and News is 11px, dropped 3px, in footer gray.",
+        "section": "typography"
+      },
+      {
+        "name": "The 1280 Rule",
+        "body": "Content lives in a 1280px container. The grid to follow is 12 columns with a 24px gutter and a 24px margin.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Panel Rule",
+        "body": "A panel at rest is white, 12px, and 1px hairline, with no shadow. Do not promote the medium or large shadow onto resting panels. The article card itself is flat.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pill Control Rule",
+        "body": "Buttons, chips, and the bias meter are full pills. Panels and photographs use 12px. The two radii do not swap.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Shared Disabled Rule",
+        "body": "Disabled buttons share one treatment: pressed gray fill, slate type, transparent border. Variant and outline do not survive the disabled state.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do set the page on sheet gray (#f6f6f6) with near-black ink (#00000f) in Poppins.",
+      "Do keep panels white, with a 12px corner, a 1px #e5e7eb border, and no resting shadow.",
+      "Do use the full pill radius (9999px) for buttons, chips, and the bias meter.",
+      "Do draw the bias meter as left red, center hairline, and right blue. The reference split on the sheet is 25 / 50 / 25.",
+      "Do set the wordmark as Skew in extrabold with the smaller News mark on the baseline."
+    ],
+    "donts": [
+      "Don't add a second typeface, a monospace role, or a dark color scheme.",
+      "Don't place the small, medium, or large shadow on a resting panel.",
+      "Don't use the left bias red for button fills or page backgrounds.",
+      "Don't split the center share off the hairline. Both are #e5e7eb."
+    ]
+  }
+}
