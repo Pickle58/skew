@@ -1,9 +1,12 @@
 import Image from "next/image";
-import { Info } from "lucide-react";
-import { AnalysisFeedbackButton, BiasMethodologyButton } from "@/components/article/analysis-actions";
+import { AnalysisFeedbackButton } from "@/components/article/analysis-actions";
 import { ArticleActions, OriginalArticleLink } from "@/components/article/article-actions";
+import {
+  BiasMethodology,
+  BiasMethodologyButton,
+  BiasMethodologyInfoButton,
+} from "@/components/article/bias-methodology";
 import { BiasRows } from "@/components/article/bias-rows";
-import { NewsletterForm } from "@/components/article/newsletter-form";
 import { RelatedStories } from "@/components/article/related-stories";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -72,7 +75,7 @@ export function ArticlePage({ article, related }: ArticlePageProps) {
 
   return (
     <div className="flex min-h-full flex-col">
-      <SiteHeader showTopics={false} />
+      <SiteHeader />
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-6 pt-6">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)] lg:gap-10">
           <article>
@@ -139,33 +142,29 @@ export function ArticlePage({ article, related }: ArticlePageProps) {
           </article>
 
           <aside className="flex flex-col gap-4">
-            <section className="rounded-lg border border-line bg-panel p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[16px] font-semibold leading-[1.4] text-ink">Bias Analysis</h2>
-                <button
-                  type="button"
-                  aria-label="About this estimate"
-                  className="inline-flex size-5 items-center justify-center rounded-full text-muted"
-                >
-                  <Info className="size-3.5" strokeWidth={2} aria-hidden="true" />
-                </button>
-              </div>
-              <p className="mt-4 text-[11px] leading-[1.4] text-muted">AI-estimated framing</p>
-              <p className={`text-[20px] font-semibold leading-[1.3] ${labelClass(analysis.bias_label)}`}>
-                {labelText(analysis.bias_label)}
-                {share !== null ? ` ${share}%` : null}
-              </p>
-              <p className="mt-1 text-[11px] leading-[1.4] text-muted">{formatConfidence(analysis.confidence)}</p>
-              <BiasRows
-                rows={[
-                  { label: "Left", percent: analysis.left_percentage, fillClassName: "bg-bias-left" },
-                  { label: "Center", percent: analysis.center_percentage, fillClassName: "bg-bias-center" },
-                  { label: "Right", percent: analysis.right_percentage, fillClassName: "bg-bias-right" },
-                ]}
-              />
-              <p className="mt-4 text-[13px] leading-[1.6] text-muted">{analysis.disclaimer}</p>
-              <BiasMethodologyButton articleId={article.id} biasLabel={analysis.bias_label} />
-            </section>
+            <BiasMethodology articleId={article.id} biasLabel={analysis.bias_label}>
+              <section className="rounded-lg border border-line bg-panel p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-[16px] font-semibold leading-[1.4] text-ink">Bias Analysis</h2>
+                  <BiasMethodologyInfoButton />
+                </div>
+                <p className="mt-4 text-[11px] leading-[1.4] text-muted">AI-estimated framing</p>
+                <p className={`text-[20px] font-semibold leading-[1.3] ${labelClass(analysis.bias_label)}`}>
+                  {labelText(analysis.bias_label)}
+                  {share !== null ? ` ${share}%` : null}
+                </p>
+                <p className="mt-1 text-[11px] leading-[1.4] text-muted">{formatConfidence(analysis.confidence)}</p>
+                <BiasRows
+                  rows={[
+                    { label: "Left", percent: analysis.left_percentage, fillClassName: "bg-bias-left" },
+                    { label: "Center", percent: analysis.center_percentage, fillClassName: "bg-bias-center" },
+                    { label: "Right", percent: analysis.right_percentage, fillClassName: "bg-bias-right" },
+                  ]}
+                />
+                <p className="mt-4 text-[13px] leading-[1.6] text-muted">{analysis.disclaimer}</p>
+                <BiasMethodologyButton />
+              </section>
+            </BiasMethodology>
 
             <section className="rounded-lg border border-line bg-panel p-4">
               <h2 className="text-[16px] font-semibold leading-[1.4] text-ink">Sentiment</h2>
@@ -222,7 +221,6 @@ export function ArticlePage({ article, related }: ArticlePageProps) {
             </section>
           </aside>
         </div>
-        <NewsletterForm />
       </main>
       <SiteFooter />
     </div>

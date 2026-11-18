@@ -16,6 +16,18 @@ type AiGenerationCaptureContext = AiCaptureContext & {
   outputTokens: number;
 };
 
+export function redactAiInput(input: {
+  kind: "analysis" | "embedding";
+  title: string;
+  charCount: number;
+}): { kind: string; title: string; charCount: number } {
+  return {
+    kind: input.kind,
+    title: input.title.slice(0, 200),
+    charCount: input.charCount,
+  };
+}
+
 export function captureAiGeneration(context: AiGenerationCaptureContext): void {
   getPostHogClient()?.capture({
     distinctId: context.sessionId,

@@ -3,7 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { embed } from "ai";
 import { getOpenAIApiKey } from "@/lib/env/server";
 import { ANALYSIS_TEXT_CHAR_LIMIT, EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from "@/lib/limits";
-import { captureAiEmbedding } from "@/lib/posthog-ai";
+import { captureAiEmbedding, redactAiInput } from "@/lib/posthog-ai";
 
 function toVectorLiteral(values: readonly number[]): string {
   return `[${values.join(",")}]`;
@@ -17,6 +17,11 @@ export async function embedArticleText(input: {
 }): Promise<string> {
   const rawText = input.rawText.slice(0, ANALYSIS_TEXT_CHAR_LIMIT);
   const value = `Title: ${input.title}\n\n${rawText}`;
+  const redactedInput = redactAiInput({
+    kind: "embedding",
+    title: input.title,
+    charCount: rawText.length,
+  });
   const openai = createOpenAI({ apiKey: getOpenAIApiKey() });
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -34,7 +39,7 @@ export async function embedArticleText(input: {
         sessionId: input.aiSessionId,
         traceId: input.aiTraceId,
         model: EMBEDDING_MODEL,
-        input: value,
+        input: redactedInput,
         inputTokens: usage.tokens,
         latency: (Date.now() - startedAt) / 1000,
         isError: false,
@@ -45,7 +50,7 @@ export async function embedArticleText(input: {
         sessionId: input.aiSessionId,
         traceId: input.aiTraceId,
         model: EMBEDDING_MODEL,
-        input: value,
+        input: redactedInput,
         inputTokens: 0,
         latency: (Date.now() - startedAt) / 1000,
         isError: true,

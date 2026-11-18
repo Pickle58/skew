@@ -1,7 +1,12 @@
 import { connection } from "next/server";
+import { isAuthorizedAdminRequest } from "@/lib/api/admin-auth";
 import { listActiveSources } from "@/lib/supabase/queries/sources";
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   await connection();
   try {
     const sources = await listActiveSources();

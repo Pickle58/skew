@@ -1,13 +1,13 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { getCronSecret } from "@/lib/env/server";
+import { getCronSecret, isInsecureCronAllowed } from "@/lib/env/server";
 
 function digest(value: string): Buffer {
   return createHash("sha256").update(value).digest();
 }
 
 export function isAuthorizedCronRequest(request: Request): boolean {
-  if (process.env.NODE_ENV === "development") {
+  if (isInsecureCronAllowed()) {
     return true;
   }
 

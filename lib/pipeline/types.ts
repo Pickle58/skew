@@ -58,6 +58,8 @@ export type AnalyzeOptions = {
   articleIds?: string[];
   limit?: number;
   batchSize?: number;
+  /** Absolute epoch ms; analyze stops cleanly as partial when reached. */
+  deadlineMs?: number;
 };
 
 export type AnalyzeRunSummary = {

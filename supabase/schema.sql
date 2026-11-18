@@ -52,13 +52,26 @@ create table if not exists public.articles (
   raw_text text not null,
   scraped_at timestamptz not null default now(),
   analyzed_at timestamptz,
+  analysis_attempt_count integer not null default 0
+    check (analysis_attempt_count >= 0),
+  analysis_last_error text,
+  analysis_abandoned_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+alter table public.articles
+  add column if not exists analysis_attempt_count integer not null default 0;
+alter table public.articles
+  add column if not exists analysis_last_error text;
+alter table public.articles
+  add column if not exists analysis_abandoned_at timestamptz;
 
 create index if not exists articles_source_id_idx on public.articles (source_id);
 create index if not exists articles_published_at_idx on public.articles (published_at desc);
 create index if not exists articles_analyzed_at_idx on public.articles (analyzed_at desc)
   where analyzed_at is not null;
+create index if not exists articles_analysis_abandoned_at_idx on public.articles (analysis_abandoned_at)
+  where analysis_abandoned_at is not null;
 
 -- article_analyses -----------------------------------------------------------
 
@@ -88,18 +101,51 @@ create table if not exists public.article_analyses (
 alter table public.article_analyses
   add column if not exists embedding extensions.vector(1536);
 
--- lists = 1 is valid once the table has a row. Skip when it does not, so a fresh schema apply still succeeds.
+-- IVFFlat needs at least one row. lists ≈ sqrt(n), capped for small corpora.
+-- Rebuild after large embedding backfills so lists stays appropriate.
 do $$
+declare
+  row_count integer;
+  list_count integer;
 begin
-  if to_regclass('public.article_analyses_embedding_idx') is null
-     and (select count(*) from public.article_analyses) >= 1 then
-    create index article_analyses_embedding_idx
-      on public.article_analyses
-      using ivfflat (embedding vector_cosine_ops)
-      with (lists = 1);
+  if to_regclass('public.article_analyses_embedding_idx') is null then
+    select count(*)::integer into row_count from public.article_analyses where embedding is not null;
+    if row_count >= 1 then
+      list_count := greatest(1, least(100, ceil(sqrt(row_count))::integer));
+      execute format(
+        'create index article_analyses_embedding_idx on public.article_analyses using ivfflat (embedding vector_cosine_ops) with (lists = %s)',
+        list_count
+      );
+    end if;
   end if;
 end
 $$;
+
+create or replace function public.repair_analyzed_at_orphans()
+returns integer
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  repaired integer;
+begin
+  with updated as (
+    update public.articles as a
+    set analyzed_at = now()
+    from public.article_analyses as aa
+    where aa.article_id = a.id
+      and a.analyzed_at is null
+      and aa.embedding is not null
+    returning a.id
+  )
+  select count(*)::integer into repaired from updated;
+  return repaired;
+end;
+$$;
+
+revoke all on function public.repair_analyzed_at_orphans() from public, anon, authenticated;
+grant execute on function public.repair_analyzed_at_orphans() to service_role;
 
 create or replace function public.match_related_articles(
   query_embedding extensions.vector(1536),
@@ -151,6 +197,88 @@ create table if not exists public.logs (
 create index if not exists logs_created_at_idx on public.logs (created_at desc);
 create index if not exists logs_scope_created_at_idx on public.logs (scope, created_at desc);
 
+-- pipeline_locks -------------------------------------------------------------
+
+create table if not exists public.pipeline_locks (
+  key text primary key check (key in ('cron', 'scrape', 'analyze')),
+  holder text not null,
+  expires_at timestamptz not null
+);
+
+create or replace function public.try_acquire_pipeline_lock(
+  p_key text,
+  p_holder text,
+  p_ttl_ms integer
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  now_ts timestamptz := now();
+  expires timestamptz := now_ts + make_interval(secs => p_ttl_ms::double precision / 1000.0);
+  conflicting boolean;
+  existing_holder text;
+  existing_expires timestamptz;
+begin
+  if p_key is null or p_key not in ('cron', 'scrape', 'analyze') then
+    raise exception 'invalid pipeline lock key: %', p_key;
+  end if;
+  if p_holder is null or length(p_holder) = 0 then
+    raise exception 'pipeline lock holder is required';
+  end if;
+  if p_ttl_ms is null or p_ttl_ms <= 0 then
+    raise exception 'pipeline lock ttl_ms must be positive';
+  end if;
+
+  lock table public.pipeline_locks in exclusive mode;
+
+  if p_key = 'cron' then
+    select exists(
+      select 1
+      from public.pipeline_locks
+      where key in ('scrape', 'analyze')
+        and expires_at > now_ts
+    ) into conflicting;
+  else
+    select exists(
+      select 1
+      from public.pipeline_locks
+      where key = 'cron'
+        and expires_at > now_ts
+    ) into conflicting;
+  end if;
+
+  if conflicting then
+    return false;
+  end if;
+
+  select holder, expires_at
+  into existing_holder, existing_expires
+  from public.pipeline_locks
+  where key = p_key;
+
+  if found then
+    if existing_expires > now_ts then
+      return false;
+    end if;
+    update public.pipeline_locks
+    set holder = p_holder,
+        expires_at = expires
+    where key = p_key;
+  else
+    insert into public.pipeline_locks (key, holder, expires_at)
+    values (p_key, p_holder, expires);
+  end if;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.try_acquire_pipeline_lock(text, text, integer) from public, anon, authenticated;
+grant execute on function public.try_acquire_pipeline_lock(text, text, integer) to service_role;
+
 -- oxylabs_schedules ----------------------------------------------------------
 
 create table if not exists public.oxylabs_schedules (
@@ -190,6 +318,7 @@ alter table public.sources enable row level security;
 alter table public.articles enable row level security;
 alter table public.article_analyses enable row level security;
 alter table public.logs enable row level security;
+alter table public.pipeline_locks enable row level security;
 alter table public.oxylabs_schedules enable row level security;
 alter table public.oxylabs_schedule_runs enable row level security;
 
@@ -197,6 +326,7 @@ revoke all on table public.sources from anon, authenticated;
 revoke all on table public.articles from anon, authenticated;
 revoke all on table public.article_analyses from anon, authenticated;
 revoke all on table public.logs from anon, authenticated;
+revoke all on table public.pipeline_locks from anon, authenticated;
 revoke all on table public.oxylabs_schedules from anon, authenticated;
 revoke all on table public.oxylabs_schedule_runs from anon, authenticated;
 
