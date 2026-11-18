@@ -321,6 +321,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      try_acquire_pipeline_lock: {
+        Args: {
+          p_holder: string
+          p_key: string
+          p_ttl_ms: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

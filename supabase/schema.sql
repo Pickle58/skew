@@ -205,6 +205,80 @@ create table if not exists public.pipeline_locks (
   expires_at timestamptz not null
 );
 
+create or replace function public.try_acquire_pipeline_lock(
+  p_key text,
+  p_holder text,
+  p_ttl_ms integer
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  now_ts timestamptz := now();
+  expires timestamptz := now_ts + make_interval(secs => p_ttl_ms::double precision / 1000.0);
+  conflicting boolean;
+  existing_holder text;
+  existing_expires timestamptz;
+begin
+  if p_key is null or p_key not in ('cron', 'scrape', 'analyze') then
+    raise exception 'invalid pipeline lock key: %', p_key;
+  end if;
+  if p_holder is null or length(p_holder) = 0 then
+    raise exception 'pipeline lock holder is required';
+  end if;
+  if p_ttl_ms is null or p_ttl_ms <= 0 then
+    raise exception 'pipeline lock ttl_ms must be positive';
+  end if;
+
+  lock table public.pipeline_locks in exclusive mode;
+
+  if p_key = 'cron' then
+    select exists(
+      select 1
+      from public.pipeline_locks
+      where key in ('scrape', 'analyze')
+        and expires_at > now_ts
+    ) into conflicting;
+  else
+    select exists(
+      select 1
+      from public.pipeline_locks
+      where key = 'cron'
+        and expires_at > now_ts
+    ) into conflicting;
+  end if;
+
+  if conflicting then
+    return false;
+  end if;
+
+  select holder, expires_at
+  into existing_holder, existing_expires
+  from public.pipeline_locks
+  where key = p_key;
+
+  if found then
+    if existing_expires > now_ts then
+      return false;
+    end if;
+    update public.pipeline_locks
+    set holder = p_holder,
+        expires_at = expires
+    where key = p_key;
+  else
+    insert into public.pipeline_locks (key, holder, expires_at)
+    values (p_key, p_holder, expires);
+  end if;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.try_acquire_pipeline_lock(text, text, integer) from public, anon, authenticated;
+grant execute on function public.try_acquire_pipeline_lock(text, text, integer) to service_role;
+
 -- oxylabs_schedules ----------------------------------------------------------
 
 create table if not exists public.oxylabs_schedules (

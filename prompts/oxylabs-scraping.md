@@ -438,7 +438,8 @@ Plus live verification during implementation, which uses Oxylabs credits:
    ```
 3. List active sources:
    ```bash
-   curl http://localhost:3000/api/sources
+   curl http://localhost:3000/api/sources \
+     -H "x-skew-admin-secret: $SKEW_ADMIN_SECRET"
    ```
 4. Confirm the route rejects a missing secret (expect `401`):
    ```bash

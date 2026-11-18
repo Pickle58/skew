@@ -240,9 +240,12 @@ export async function listArticlesMissingEmbedding(
   limit: number,
   options: { articleIds?: string[]; excludeIds?: string[] } = {},
 ): Promise<EmbeddingBackfillArticle[]> {
+  const fetchLimit = Math.max(limit * 2, limit);
   let query = getSupabaseAdmin()
     .from("article_analyses")
-    .select("article:articles!inner(id, source_id, title, raw_text, published_at, analyzed_at)")
+    .select(
+      "article:articles!inner(id, source_id, title, raw_text, published_at, analyzed_at, analysis_abandoned_at)",
+    )
     .is("embedding", null);
 
   const articleIds = options.articleIds?.filter((id) => UUID_PATTERN.test(id));
@@ -254,17 +257,20 @@ export async function listArticlesMissingEmbedding(
     query = query.not("article_id", "in", `(${excludeIds.join(",")})`);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: true }).limit(limit);
+  const { data, error } = await query.order("created_at", { ascending: true }).limit(fetchLimit);
   if (error) throw queryError("listArticlesMissingEmbedding", error);
 
-  return data.map(({ article }) => ({
-    id: article.id,
-    source_id: article.source_id,
-    title: article.title,
-    raw_text: article.raw_text,
-    published_at: article.published_at,
-    analyzed_at: article.analyzed_at,
-  }));
+  return data
+    .filter(({ article }) => article.analysis_abandoned_at == null)
+    .slice(0, limit)
+    .map(({ article }) => ({
+      id: article.id,
+      source_id: article.source_id,
+      title: article.title,
+      raw_text: article.raw_text,
+      published_at: article.published_at,
+      analyzed_at: article.analyzed_at,
+    }));
 }
 
 export async function markArticleAnalyzed(id: string): Promise<void> {
