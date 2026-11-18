@@ -13,8 +13,8 @@ import {
   toBiasLabel,
   toSentimentLabel,
   type ArticleCard,
+  type ArticleDetail,
   type ArticleInsert,
-  type ArticleRecord,
   type ArticleRow,
   type EmbeddingBackfillArticle,
   type PendingArticle,
@@ -105,7 +105,23 @@ export async function listArticleCards(options: { limit?: number } = {}): Promis
   }));
 }
 
-export const getArticleDetail = cache(async (id: string): Promise<ArticleRecord | null> => {
+export const getArticleMetadata = cache(async (id: string): Promise<{ title: string } | null> => {
+  if (!UUID_PATTERN.test(id)) {
+    return null;
+  }
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("articles")
+    .select("title")
+    .eq("id", id)
+    .not("analyzed_at", "is", null)
+    .maybeSingle();
+  if (error) throw queryError("getArticleMetadata", error);
+  if (!data) return null;
+  return { title: data.title };
+});
+
+export const getArticleDetail = cache(async (id: string): Promise<ArticleDetail | null> => {
   if (!UUID_PATTERN.test(id)) {
     return null;
   }
@@ -113,7 +129,7 @@ export const getArticleDetail = cache(async (id: string): Promise<ArticleRecord 
   const { data, error } = await getSupabaseAdmin()
     .from("articles")
     .select(
-      "*, source:sources!inner(id, name, logo_url), analysis:article_analyses!inner(id, article_id, summary, sentiment_score, sentiment_label, bias_label, left_percentage, center_percentage, right_percentage, bias_score, confidence, framing_notes, loaded_terms, disclaimer, model, created_at, embedding)",
+      "*, source:sources!inner(id, name, logo_url), analysis:article_analyses!inner(id, article_id, summary, sentiment_score, sentiment_label, bias_label, left_percentage, center_percentage, right_percentage, bias_score, confidence, framing_notes, loaded_terms, disclaimer, model, created_at)",
     )
     .eq("id", id)
     .not("analyzed_at", "is", null)
@@ -122,8 +138,44 @@ export const getArticleDetail = cache(async (id: string): Promise<ArticleRecord 
   if (!data) return null;
 
   const { source, analysis, ...article } = data;
-  return { ...article, source, analysis: toAnalysisRow(analysis) };
+  const row = toAnalysisRow({ ...analysis, embedding: null });
+  return {
+    ...article,
+    source,
+    analysis: {
+      id: row.id,
+      article_id: row.article_id,
+      summary: row.summary,
+      sentiment_score: row.sentiment_score,
+      sentiment_label: row.sentiment_label,
+      bias_label: row.bias_label,
+      left_percentage: row.left_percentage,
+      center_percentage: row.center_percentage,
+      right_percentage: row.right_percentage,
+      bias_score: row.bias_score,
+      confidence: row.confidence,
+      framing_notes: row.framing_notes,
+      loaded_terms: row.loaded_terms,
+      disclaimer: row.disclaimer,
+      model: row.model,
+      created_at: row.created_at,
+    },
+  };
 });
+
+export async function getArticleEmbedding(articleId: string): Promise<string | null> {
+  if (!UUID_PATTERN.test(articleId)) {
+    return null;
+  }
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("article_analyses")
+    .select("embedding")
+    .eq("article_id", articleId)
+    .maybeSingle();
+  if (error) throw queryError("getArticleEmbedding", error);
+  return data?.embedding ?? null;
+}
 
 function embeddingDimensions(embedding: string): number {
   if (!embedding.startsWith("[") || !embedding.endsWith("]")) return 0;
@@ -160,7 +212,8 @@ export async function listPendingAnalysisArticles(
   let query = getSupabaseAdmin()
     .from("articles")
     .select("id, source_id, title, raw_text, published_at, article_analyses!left(id)")
-    .is("article_analyses", null);
+    .is("article_analyses", null)
+    .is("analysis_abandoned_at", null);
 
   const articleIds = options.articleIds?.filter((id) => UUID_PATTERN.test(id));
   if (articleIds && articleIds.length > 0) {
@@ -220,4 +273,41 @@ export async function markArticleAnalyzed(id: string): Promise<void> {
     .update({ analyzed_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw queryError("markArticleAnalyzed", error);
+}
+
+export async function repairAnalyzedAtOrphans(): Promise<number> {
+  const { data, error } = await getSupabaseAdmin().rpc("repair_analyzed_at_orphans");
+  if (error) throw queryError("repairAnalyzedAtOrphans", error);
+  return data ?? 0;
+}
+
+export async function recordAnalysisFailure(id: string, message: string, maxAttempts: number): Promise<void> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("articles")
+    .select("analysis_attempt_count")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw queryError("recordAnalysisFailure.select", error);
+
+  const nextCount = (data?.analysis_attempt_count ?? 0) + 1;
+  const abandoned = nextCount >= maxAttempts;
+  const { error: updateError } = await getSupabaseAdmin()
+    .from("articles")
+    .update({
+      analysis_attempt_count: nextCount,
+      analysis_last_error: message.slice(0, 500),
+      ...(abandoned ? { analysis_abandoned_at: new Date().toISOString() } : {}),
+    })
+    .eq("id", id);
+  if (updateError) throw queryError("recordAnalysisFailure.update", updateError);
+}
+
+export async function getArticleAnalyzedAt(id: string): Promise<string | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("articles")
+    .select("analyzed_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw queryError("getArticleAnalyzedAt", error);
+  return data?.analyzed_at ?? null;
 }

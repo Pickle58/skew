@@ -4,12 +4,16 @@ export const DEFAULT_ANALYSIS_BATCH_SIZE = 5 as const;
 export const MAX_ANALYSIS_BATCH_SIZE = 20 as const;
 export const MAX_ANALYSIS_LIMIT = 100 as const;
 export const MAX_ANALYSIS_ARTICLE_IDS = 50 as const;
+export const MAX_ANALYSIS_ATTEMPTS = 3 as const;
 export const ANALYSIS_TEXT_CHAR_LIMIT = 12_000 as const;
 export const ANALYSIS_MODEL = "gpt-5.4-mini" as const;
 export const EMBEDDING_MODEL = "text-embedding-3-small" as const;
 export const EMBEDDING_DIMENSIONS = 1536 as const;
 export const RELATED_ARTICLE_LIMIT = 5 as const;
 export const MAX_LOG_PAGE_SIZE = 200 as const;
+export const MIN_ADMIN_SECRET_LENGTH = 16 as const;
+export const PIPELINE_LOCK_TTL_MS = 300_000;
+export const CRON_TIME_BUDGET_MS = 270_000;
 
 export const MAX_ARTICLES_PER_SOURCE = 10 as const;
 export const MAX_DETAIL_ATTEMPTS_PER_SOURCE_CAP = 20 as const;

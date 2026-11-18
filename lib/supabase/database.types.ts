@@ -84,6 +84,9 @@ export type Database = {
       }
       articles: {
         Row: {
+          analysis_abandoned_at: string | null
+          analysis_attempt_count: number
+          analysis_last_error: string | null
           analyzed_at: string | null
           canonical_url: string | null
           created_at: string
@@ -97,6 +100,9 @@ export type Database = {
           title: string
         }
         Insert: {
+          analysis_abandoned_at?: string | null
+          analysis_attempt_count?: number
+          analysis_last_error?: string | null
           analyzed_at?: string | null
           canonical_url?: string | null
           created_at?: string
@@ -110,6 +116,9 @@ export type Database = {
           title: string
         }
         Update: {
+          analysis_abandoned_at?: string | null
+          analysis_attempt_count?: number
+          analysis_last_error?: string | null
           analyzed_at?: string | null
           canonical_url?: string | null
           created_at?: string
@@ -131,6 +140,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pipeline_locks: {
+        Row: {
+          expires_at: string
+          holder: string
+          key: string
+        }
+        Insert: {
+          expires_at: string
+          holder: string
+          key: string
+        }
+        Update: {
+          expires_at?: string
+          holder?: string
+          key?: string
+        }
+        Relationships: []
       }
       logs: {
         Row: {
@@ -289,6 +316,10 @@ export type Database = {
           source_name: string
           title: string
         }[]
+      }
+      repair_analyzed_at_orphans: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
     }
     Enums: {

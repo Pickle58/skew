@@ -3,14 +3,17 @@ import { randomUUID } from "node:crypto";
 import { analyzeArticleText } from "@/lib/ai/analyze-article";
 import { embedArticleText } from "@/lib/ai/embed-article";
 import { getAnalysisBatchSize, getOpenAIApiKey } from "@/lib/env/server";
-import { ANALYSIS_MODEL } from "@/lib/limits";
+import { ANALYSIS_MODEL, MAX_ANALYSIS_ATTEMPTS } from "@/lib/limits";
 import { errorMessage } from "@/lib/pipeline/logger";
 import type { AnalyzeOptions, AnalyzeRunStatus, AnalyzeRunSummary } from "@/lib/pipeline/types";
 import { insertArticleAnalysis, updateArticleEmbedding } from "@/lib/supabase/queries/analyses";
 import {
+  getArticleAnalyzedAt,
   listArticlesMissingEmbedding,
   listPendingAnalysisArticles,
   markArticleAnalyzed,
+  recordAnalysisFailure,
+  repairAnalyzedAtOrphans,
 } from "@/lib/supabase/queries/articles";
 import { insertLog } from "@/lib/supabase/queries/logs";
 import type { EmbeddingBackfillArticle, Json, PendingArticle } from "@/lib/supabase/types";
@@ -44,6 +47,10 @@ function toJson(summary: AnalyzeRunSummary): { [key: string]: Json | undefined }
   return JSON.parse(JSON.stringify(summary));
 }
 
+function pastDeadline(deadlineMs: number | undefined): boolean {
+  return deadlineMs !== undefined && Date.now() >= deadlineMs;
+}
+
 async function finish(summary: AnalyzeRunSummary): Promise<AnalyzeRunSummary> {
   const seconds = (summary.durationMs / 1000).toFixed(1);
   if (summary.status === "failed") {
@@ -65,56 +72,89 @@ async function markSaved(id: string): Promise<void> {
   try {
     await markArticleAnalyzed(id);
   } catch {
+    await new Promise((resolve) => setTimeout(resolve, 250));
     await markArticleAnalyzed(id);
   }
+}
+
+async function noteFailure(articleId: string, title: string, message: string, error: unknown): Promise<void> {
+  const detail = safeError(error);
+  logWarn(`failed ${articleId}: ${detail}`);
+  await recordAnalysisFailure(articleId, detail, MAX_ANALYSIS_ATTEMPTS).catch((recordError) => {
+    logWarn(`could not record failure for ${articleId}: ${safeError(recordError)}`);
+  });
+  await insertLog({
+    level: "warn",
+    scope: "analyze",
+    message,
+    context: { articleId, title, error: detail },
+  });
 }
 
 type WorkItem =
   | { kind: "analysis"; article: PendingArticle }
   | { kind: "embedding"; article: EmbeddingBackfillArticle };
 
-async function recordFailure(article: PendingArticle, message: string, error: unknown): Promise<void> {
-  logWarn(`failed ${article.id}: ${safeError(error)}`);
-  await insertLog({
-    level: "warn",
-    scope: "analyze",
-    message,
-    context: { articleId: article.id, title: article.title, error: safeError(error) },
-  });
-}
-
 async function processAnalysis(article: PendingArticle, aiSessionId: string, aiTraceId: string): Promise<Outcome> {
   if (article.raw_text.trim().length === 0) {
     logWarn(`skipped empty text ${article.id}`);
+    await recordAnalysisFailure(article.id, "empty raw_text", MAX_ANALYSIS_ATTEMPTS).catch(() => {});
     return "skipped";
   }
 
   let analysis: Awaited<ReturnType<typeof analyzeArticleText>>;
-  let embedding: string;
   try {
-    [analysis, embedding] = await Promise.all([
-      analyzeArticleText({ title: article.title, rawText: article.raw_text, aiSessionId, aiTraceId }),
-      embedArticleText({ title: article.title, rawText: article.raw_text, aiSessionId, aiTraceId }),
-    ]);
+    analysis = await analyzeArticleText({
+      title: article.title,
+      rawText: article.raw_text,
+      aiSessionId,
+      aiTraceId,
+    });
   } catch (error) {
-    await recordFailure(article, "Article analysis failed", error);
+    await noteFailure(article.id, article.title, "Article analysis failed", error);
     return "failed";
   }
 
   try {
-    await insertArticleAnalysis({ ...analysis, article_id: article.id, embedding });
+    await insertArticleAnalysis({ ...analysis, article_id: article.id, embedding: null });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      logWarn(`skipped existing analysis ${article.id}`);
-      return "skipped";
+      logWarn(`existing analysis ${article.id}; repairing mark if needed`);
+      const analyzedAt = await getArticleAnalyzedAt(article.id);
+      if (analyzedAt !== null) {
+        return "skipped";
+      }
+      return processEmbedding(
+        {
+          ...article,
+          analyzed_at: null,
+        },
+        aiSessionId,
+        aiTraceId,
+      );
     }
     logWarn(`save failed ${article.id}: ${safeError(error)}`);
-    await insertLog({
-      level: "error",
-      scope: "analyze",
-      message: "Article analysis save failed",
-      context: { articleId: article.id, title: article.title, error: safeError(error) },
+    await noteFailure(article.id, article.title, "Article analysis save failed", error);
+    return "failed";
+  }
+
+  let embedding: string;
+  try {
+    embedding = await embedArticleText({
+      title: article.title,
+      rawText: article.raw_text,
+      aiSessionId,
+      aiTraceId,
     });
+  } catch (error) {
+    await noteFailure(article.id, article.title, "Article embedding failed after analysis save", error);
+    return "failed";
+  }
+
+  try {
+    await updateArticleEmbedding(article.id, embedding);
+  } catch (error) {
+    await noteFailure(article.id, article.title, "Article embedding save failed", error);
     return "failed";
   }
 
@@ -142,14 +182,20 @@ async function processEmbedding(
 ): Promise<Outcome> {
   if (article.raw_text.trim().length === 0) {
     logWarn(`skipped empty text ${article.id}`);
+    await recordAnalysisFailure(article.id, "empty raw_text", MAX_ANALYSIS_ATTEMPTS).catch(() => {});
     return "skipped";
   }
 
   let embedding: string;
   try {
-    embedding = await embedArticleText({ title: article.title, rawText: article.raw_text, aiSessionId, aiTraceId });
+    embedding = await embedArticleText({
+      title: article.title,
+      rawText: article.raw_text,
+      aiSessionId,
+      aiTraceId,
+    });
   } catch (error) {
-    await recordFailure(article, "Article embedding failed", error);
+    await noteFailure(article.id, article.title, "Article embedding failed", error);
     return "failed";
   }
 
@@ -157,12 +203,7 @@ async function processEmbedding(
     await updateArticleEmbedding(article.id, embedding);
   } catch (error) {
     logWarn(`save failed ${article.id}: ${safeError(error)}`);
-    await insertLog({
-      level: "error",
-      scope: "analyze",
-      message: "Article embedding save failed",
-      context: { articleId: article.id, title: article.title, error: safeError(error) },
-    });
+    await noteFailure(article.id, article.title, "Article embedding save failed", error);
     return "failed";
   }
 
@@ -199,9 +240,14 @@ async function processArticle(item: WorkItem, aiSessionId: string): Promise<Outc
   }
 }
 
-function resolveStatus(analyzed: number, failed: number, fatal: boolean): AnalyzeRunStatus {
-  if (fatal || (failed > 0 && analyzed === 0)) return "failed";
-  if (failed > 0) return "partial";
+function resolveStatus(
+  analyzed: number,
+  failed: number,
+  fatal: boolean,
+  timedOut: boolean,
+): AnalyzeRunStatus {
+  if (fatal || (failed > 0 && analyzed === 0 && !timedOut)) return "failed";
+  if (failed > 0 || timedOut) return "partial";
   return "completed";
 }
 
@@ -216,9 +262,10 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
   let batches = 0;
   let considered = 0;
   let fatal = false;
+  let timedOut = false;
 
   const build = (error?: string): AnalyzeRunSummary => ({
-    status: resolveStatus(analyzed, failed, fatal),
+    status: resolveStatus(analyzed, failed, fatal, timedOut),
     articlesConsidered: considered,
     analyzed,
     skipped,
@@ -230,7 +277,7 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
   });
 
   logStep(
-    `started batchSize=${batchSize} limit=${options.limit ?? "all"} articleIds=${options.articleIds?.length ?? 0}`,
+    `started batchSize=${batchSize} limit=${options.limit ?? "all"} articleIds=${options.articleIds?.length ?? 0} deadline=${options.deadlineMs ?? "none"}`,
   );
   await insertLog({
     level: "info",
@@ -241,6 +288,7 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
       limit: options.limit ?? null,
       articleIdCount: options.articleIds?.length ?? 0,
       model: ANALYSIS_MODEL,
+      deadlineMs: options.deadlineMs ?? null,
     },
   });
 
@@ -254,8 +302,19 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
 
   let fatalMessage: string | undefined;
   try {
+    const repaired = await repairAnalyzedAtOrphans();
+    if (repaired > 0) {
+      logStep(`repaired analyzed_at orphans=${repaired}`);
+    }
+
     const processed = () => analyzed + skipped + failed;
     while (options.limit === undefined || processed() < options.limit) {
+      if (pastDeadline(options.deadlineMs)) {
+        timedOut = true;
+        logWarn("stopping early: cron time budget reached");
+        break;
+      }
+
       const room = options.limit === undefined ? batchSize : Math.min(batchSize, options.limit - processed());
       if (room <= 0) break;
 
@@ -279,6 +338,11 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
       let batchSkipped = 0;
       let batchFailed = 0;
       for (const item of batch) {
+        if (pastDeadline(options.deadlineMs)) {
+          timedOut = true;
+          logWarn("stopping mid-batch: cron time budget reached");
+          break;
+        }
         attempted.push(item.article.id);
         considered += 1;
         const outcome = await processArticle(item, aiSessionId);
@@ -294,6 +358,7 @@ export async function runAnalyzePipeline(options: AnalyzeOptions = {}): Promise<
         }
       }
       logStep(`batch ${batches}: analyzed=${batchAnalyzed} skipped=${batchSkipped} failed=${batchFailed}`);
+      if (timedOut) break;
     }
 
     if (options.articleIds && options.articleIds.length > 0) {
