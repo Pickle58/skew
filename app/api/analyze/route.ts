@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { isAuthorizedAdminRequest } from "@/lib/api/admin-auth";
 import { MAX_ANALYSIS_ARTICLE_IDS, MAX_ANALYSIS_BATCH_SIZE, MAX_ANALYSIS_LIMIT } from "@/lib/limits";
@@ -5,6 +6,10 @@ import { runAnalyzePipeline } from "@/lib/pipeline/analyze";
 import { flushAiObservability } from "@/lib/posthog-ai";
 import { emitPostHogLog } from "@/lib/posthog-logs";
 import { getPostHogClient } from "@/lib/posthog-server";
+import {
+  releasePipelineLock,
+  tryAcquirePipelineLock,
+} from "@/lib/supabase/queries/pipeline-locks";
 
 export const maxDuration = 300;
 
@@ -41,6 +46,11 @@ export async function POST(request: Request) {
   const parsed = analyzeRequestSchema.safeParse(body.value);
   if (!parsed.success) {
     return Response.json({ error: "Invalid request body", issues: z.treeifyError(parsed.error) }, { status: 400 });
+  }
+
+  const lock = await tryAcquirePipelineLock("analyze", { holder: `analyze-${randomUUID()}` });
+  if (!lock) {
+    return Response.json({ error: "Pipeline busy" }, { status: 409 });
   }
 
   try {
@@ -89,6 +99,7 @@ export async function POST(request: Request) {
     console.error("[analyze] unexpected failure:", error instanceof Error ? error.message : "unknown error");
     return Response.json({ error: "Analysis failed" }, { status: 500 });
   } finally {
+    await releasePipelineLock(lock).catch(() => {});
     await flushAiObservability();
   }
 }

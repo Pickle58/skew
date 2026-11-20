@@ -397,7 +397,9 @@ Scraping and AI analysis must be triggered with `POST` for manual calls. The Ver
 
 # 15. Admin secret rule
 
-All action routes that start or mutate work must require a shared admin secret sent as the `x-skew-admin-secret` request header. Store the value in the `SKEW_ADMIN_SECRET` environment variable.
+All action routes that start or mutate work must require a shared admin secret sent as the `x-skew-admin-secret` request header. Store the value in the `SKEW_ADMIN_SECRET` environment variable (minimum 16 characters).
+
+Also require the same header on operational read routes `GET /api/logs` and `GET /api/sources`.
 
 Do not put the secret in the URL query string.
 
@@ -433,7 +435,7 @@ Do not overcomplicate manual test commands unless the implementation truly needs
 
 ---
 
-# 18. Automatic hourly pipeline (Vercel Cron)
+# 18. Automatic pipeline (Vercel Cron)
 
 Scraping uses the Oxylabs **Web API** (`webapi.oxylabs.io`, Bearer `OXYLABS_WEB_API_KEY`). Oxylabs Scheduler is a **Web Scraper API** feature (`data.oxylabs.io`, Basic auth) and is **not available** on this account. Do not implement Oxylabs schedule sync, list, or process routes. Do not call `data.oxylabs.io`.
 
@@ -443,16 +445,20 @@ Tables `oxylabs_schedules` / `oxylabs_schedule_runs` and `lib/supabase/queries/o
 
 Automate scrape → analyze with Vercel Cron and live Web API homepage fetches:
 
-1. Vercel Cron fires hourly (`0 * * * *` UTC) and `GET`s `/api/cron/pipeline`.
+1. Vercel Cron fires on the schedule in `vercel.json` and `GET`s `/api/cron/pipeline`.
 2. The cron route runs `runScrapePipeline({ trigger: "cron" })` with the existing `liveHomepageProvider` (same live Web API path as manual scrape).
-3. Immediately after scrape, the same request runs `runAnalyzePipeline({})` on all pending articles.
+3. Immediately after scrape, the same request runs `runAnalyzePipeline` on pending articles, with a time budget so the run stops cleanly before `maxDuration`.
 4. If scrape fails, analysis still runs (pre-existing unanalyzed articles).
+
+**Hobby (current):** once daily — `0 19 * * *` UTC in `vercel.json`. Legacy Hobby allows one cron per day.
+
+**Pro:** hourly (`0 * * * *`) is allowed; keep the same route and raise the schedule only after upgrading.
 
 No `:15` offset — that only existed to wait for Oxylabs Scheduler jobs.
 
 ## Deliverables
 
-- `vercel.json` — registers the hourly cron path `/api/cron/pipeline`
+- `vercel.json` — registers the cron path `/api/cron/pipeline` (daily on Hobby)
 - `GET /api/cron/pipeline` — orchestrates live scrape then analyze (`maxDuration = 300`)
 
 Do **not** add:
@@ -465,14 +471,14 @@ Do **not** add:
 
 Protect the cron route with `CRON_SECRET`. Vercel sends `Authorization: Bearer <CRON_SECRET>` on cron invocations. Reject missing or wrong values with `401`.
 
-In local development (`NODE_ENV === "development"`), skip the secret check so the route can be tested with a plain `GET`.
+In local development only, allow an insecure bypass when `ALLOW_INSECURE_CRON=1` **and** `NODE_ENV === "development"`. Do not skip auth based on `NODE_ENV` alone.
 
 Do not use `SKEW_ADMIN_SECRET` on the cron route. Do not add `CRON_SECRET` to `.env.local`. Set `CRON_SECRET` in Vercel project settings only (random ≥16 character alphanumeric string, no spaces/newlines).
 
 ## Defaults
 
 - Cron scrape: all active sources, default per-source limit
-- Cron analyze: full pending run (no artificial limit), default batch size from env
+- Cron analyze: pending run within the cron time budget, default batch size from env
 - Homepage HTML: live Oxylabs Web API only (reuse scrape-to-insert pipeline rules from section 9)
 
 ## Logging
@@ -481,7 +487,7 @@ Log orchestration with a `[cron]` console prefix and `insertLog` rows with `scop
 
 ## Manual fallbacks
 
-Until or instead of waiting for the hourly cron:
+Until or instead of waiting for the scheduled cron:
 
 - `POST /api/scrape` with `x-skew-admin-secret`
 - `POST /api/analyze` with `x-skew-admin-secret`
@@ -619,9 +625,10 @@ Canonical list lives in `.env.example`. Only `NEXT_PUBLIC_*` values may reach br
 | `SUPABASE_SERVICE_ROLE_KEY`                                                   | Service-role DB access for writes and pipeline reads                                    | server only     |
 | `OXYLABS_WEB_API_KEY`                                                         | Oxylabs Web API key (Bearer) for scraping                                               | server only     |
 | `OPENAI_API_KEY`                                                              | AI analysis and `text-embedding-3-small`                                                | server only     |
-| `SKEW_ADMIN_SECRET`                                                         | Shared secret for `x-skew-admin-secret` on action routes (section 15)                 | server only     |
+| `SKEW_ADMIN_SECRET`                                                           | Shared secret for `x-skew-admin-secret` on scrape/analyze/logs/sources (≥16 chars)      | server only     |
 | `ANALYSIS_BATCH_SIZE`                                                         | Optional; articles analyzed per batch (default 5)                                       | server only     |
 | `CRON_SECRET`                                                                 | Protects `GET /api/cron/pipeline`; injected by Vercel, not in `.env.local` (section 18) | server only     |
+| `ALLOW_INSECURE_CRON`                                                         | Local-only (`1` + development) to call cron without `CRON_SECRET`; never in production  | server only     |
 
 Keep this table and `.env.example` in sync when variables change.
 

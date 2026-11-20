@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { z } from "zod";
+import { isAuthorizedAdminRequest } from "@/lib/api/admin-auth";
 import { MAX_LOG_PAGE_SIZE } from "@/lib/limits";
 import { listLogs } from "@/lib/supabase/queries/logs";
 import { LOG_LEVELS, LOG_SCOPES } from "@/lib/supabase/types";
@@ -17,6 +18,10 @@ function readParam(url: URL, name: string): string | undefined {
 }
 
 export async function GET(request: Request) {
+  if (!isAuthorizedAdminRequest(request)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   await connection();
   const url = new URL(request.url);
   const limitRaw = readParam(url, "limit");

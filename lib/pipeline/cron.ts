@@ -1,4 +1,6 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
+import { CRON_TIME_BUDGET_MS } from "@/lib/limits";
 import { runAnalyzePipeline } from "@/lib/pipeline/analyze";
 import { errorMessage } from "@/lib/pipeline/logger";
 import { runScrapePipeline } from "@/lib/pipeline/scrape";
@@ -9,6 +11,10 @@ import type {
   ScrapeRunSummary,
 } from "@/lib/pipeline/types";
 import { insertLog } from "@/lib/supabase/queries/logs";
+import {
+  releasePipelineLock,
+  tryAcquirePipelineLock,
+} from "@/lib/supabase/queries/pipeline-locks";
 import type { Json } from "@/lib/supabase/types";
 
 const PREFIX = "[cron]";
@@ -70,71 +76,97 @@ function combineStatus(scrape: ScrapeRunSummary, analyze: AnalyzeRunSummary): Cr
 
 export async function runCronPipeline(): Promise<CronPipelineSummary> {
   const startedAt = Date.now();
-  logStep("started");
-  await insertLog({
-    level: "info",
-    scope: "cron",
-    message: "Cron pipeline started",
-  });
+  const holder = `cron-${randomUUID()}`;
+  const lock = await tryAcquirePipelineLock("cron", { holder });
+  if (!lock) {
+    logError("pipeline lock busy; skipping run");
+    const summary: CronPipelineSummary = {
+      status: "failed",
+      scrape: failedScrape(new Error("Pipeline lock busy"), 0),
+      analyze: failedAnalyze(new Error("Pipeline lock busy"), 0),
+      durationMs: Date.now() - startedAt,
+    };
+    await insertLog({
+      level: "warn",
+      scope: "cron",
+      message: "Cron pipeline skipped: lock busy",
+      context: toJson(summary),
+    });
+    return summary;
+  }
 
-  let scrape: ScrapeRunSummary;
-  const scrapeStartedAt = Date.now();
   try {
-    scrape = await runScrapePipeline({ trigger: "cron" });
-  } catch (error) {
-    logError(`scrape threw: ${errorMessage(error)}`);
-    scrape = failedScrape(error, Date.now() - scrapeStartedAt);
+    logStep("started");
+    await insertLog({
+      level: "info",
+      scope: "cron",
+      message: "Cron pipeline started",
+    });
+
+    let scrape: ScrapeRunSummary;
+    const scrapeStartedAt = Date.now();
+    try {
+      scrape = await runScrapePipeline({ trigger: "cron" });
+    } catch (error) {
+      logError(`scrape threw: ${errorMessage(error)}`);
+      scrape = failedScrape(error, Date.now() - scrapeStartedAt);
+    }
+
+    await insertLog({
+      level: scrape.status === "completed" ? "info" : scrape.status === "partial" ? "warn" : "error",
+      scope: "cron",
+      message: `Cron scrape ${scrape.status}`,
+      context: { scrapeStatus: scrape.status, articlesInserted: scrape.articlesInserted, error: scrape.error },
+    });
+
+    let analyze: AnalyzeRunSummary;
+    const analyzeStartedAt = Date.now();
+    const deadlineMs = startedAt + CRON_TIME_BUDGET_MS;
+    try {
+      analyze = await runAnalyzePipeline({ deadlineMs });
+    } catch (error) {
+      logError(`analyze threw: ${errorMessage(error)}`);
+      analyze = failedAnalyze(error, Date.now() - analyzeStartedAt);
+    }
+
+    await insertLog({
+      level: analyze.status === "completed" ? "info" : analyze.status === "partial" ? "warn" : "error",
+      scope: "cron",
+      message: `Cron analyze ${analyze.status}`,
+      context: {
+        analyzeStatus: analyze.status,
+        analyzed: analyze.analyzed,
+        failed: analyze.failed,
+        error: analyze.error,
+      },
+    });
+
+    const summary: CronPipelineSummary = {
+      status: combineStatus(scrape, analyze),
+      scrape,
+      analyze,
+      durationMs: Date.now() - startedAt,
+    };
+
+    const seconds = (summary.durationMs / 1000).toFixed(1);
+    if (summary.status === "failed") {
+      logError(`failed in ${seconds}s`);
+    } else {
+      logStep(`${summary.status} in ${seconds}s`);
+    }
+    console.log(`${PREFIX} summary`, summary);
+
+    await insertLog({
+      level: summary.status === "completed" ? "info" : summary.status === "partial" ? "warn" : "error",
+      scope: "cron",
+      message: `Cron pipeline ${summary.status}`,
+      context: toJson(summary),
+    });
+
+    return summary;
+  } finally {
+    await releasePipelineLock(lock).catch((error) => {
+      logError(`failed to release lock: ${errorMessage(error)}`);
+    });
   }
-
-  await insertLog({
-    level: scrape.status === "completed" ? "info" : scrape.status === "partial" ? "warn" : "error",
-    scope: "cron",
-    message: `Cron scrape ${scrape.status}`,
-    context: { scrapeStatus: scrape.status, articlesInserted: scrape.articlesInserted, error: scrape.error },
-  });
-
-  let analyze: AnalyzeRunSummary;
-  const analyzeStartedAt = Date.now();
-  try {
-    analyze = await runAnalyzePipeline({});
-  } catch (error) {
-    logError(`analyze threw: ${errorMessage(error)}`);
-    analyze = failedAnalyze(error, Date.now() - analyzeStartedAt);
-  }
-
-  await insertLog({
-    level: analyze.status === "completed" ? "info" : analyze.status === "partial" ? "warn" : "error",
-    scope: "cron",
-    message: `Cron analyze ${analyze.status}`,
-    context: {
-      analyzeStatus: analyze.status,
-      analyzed: analyze.analyzed,
-      failed: analyze.failed,
-      error: analyze.error,
-    },
-  });
-
-  const summary: CronPipelineSummary = {
-    status: combineStatus(scrape, analyze),
-    scrape,
-    analyze,
-    durationMs: Date.now() - startedAt,
-  };
-
-  const seconds = (summary.durationMs / 1000).toFixed(1);
-  if (summary.status === "failed") {
-    logError(`failed in ${seconds}s`);
-  } else {
-    logStep(`${summary.status} in ${seconds}s`);
-  }
-  console.log(`${PREFIX} summary`, summary);
-
-  await insertLog({
-    level: summary.status === "completed" ? "info" : summary.status === "partial" ? "warn" : "error",
-    scope: "cron",
-    message: `Cron pipeline ${summary.status}`,
-    context: toJson(summary),
-  });
-
-  return summary;
 }
