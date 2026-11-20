@@ -3,13 +3,13 @@
 import { useRef, useState } from "react";
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import posthog from "posthog-js";
-import { ChevronDown, ChevronRight, Globe, MapPin, Menu, Plus } from "lucide-react";
+import { ChevronRight, Menu, Plus } from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { topics } from "@/components/home/topics";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 
-const navItems = ["Home", "For You", "Local", "Blindspot"] as const;
+const navItems = ["Home"] as const;
 
 function NavItems({ className }: { className?: string }) {
   return (
@@ -59,37 +59,7 @@ export function SiteHeader({ showTopics = true }: { showTopics?: boolean }) {
 
   return (
     <header className="mx-auto w-full max-w-[1280px] px-6 pt-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] leading-[1.4] text-muted">
-        <button type="button" className="hover:text-ink">
-          Browser Extension
-        </button>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <div className="flex items-center gap-2">
-            <span>Theme:</span>
-            <button type="button" className="font-medium text-ink" aria-pressed="true">
-              Light
-            </button>
-            <button type="button" aria-pressed="false">
-              Dark
-            </button>
-            <button type="button" aria-pressed="false">
-              Auto
-            </button>
-          </div>
-          <time dateTime="2026-06-01">Monday, June 1, 2026</time>
-          <button type="button" className="inline-flex items-center gap-1 hover:text-ink">
-            <MapPin className="size-3" strokeWidth={2} aria-hidden="true" />
-            Set Location
-          </button>
-          <button type="button" className="inline-flex items-center gap-1 hover:text-ink">
-            <Globe className="size-3" strokeWidth={2} aria-hidden="true" />
-            International Edition
-            <ChevronDown className="size-3" strokeWidth={2} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           className="text-ink"
@@ -102,13 +72,8 @@ export function SiteHeader({ showTopics = true }: { showTopics?: boolean }) {
         </button>
         <Wordmark size="footer" />
         <NavItems className="ml-5 hidden items-center gap-5 md:flex" />
-        <div className="ml-auto flex items-center gap-2">
-          <Button size="header" onClick={() => posthog.capture("subscribe_cta_clicked", { location: "header" })}>
-            Subscribe
-          </Button>
-          <span className="hidden md:contents">
-            <AuthControl />
-          </span>
+        <div className="ml-auto hidden md:flex">
+          <AuthControl />
         </div>
       </div>
 
@@ -119,40 +84,42 @@ export function SiteHeader({ showTopics = true }: { showTopics?: boolean }) {
         </div>
       ) : null}
 
-      {showTopics ? <div className="mt-4 flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Add topic"
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink"
-        >
-          <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
-        </button>
-        <div
-          ref={topicsRef}
-          className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {topics.map((topic) => (
-            <span key={topic} className="shrink-0">
-              <Chip
-                label={topic}
-                onClick={() =>
-                  posthog.capture("topic_chip_clicked", {
-                    topic,
-                  })
-                }
-              />
-            </span>
-          ))}
+      {showTopics ? (
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Add topic"
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink"
+          >
+            <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          </button>
+          <div
+            ref={topicsRef}
+            className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {topics.map((topic) => (
+              <span key={topic} className="shrink-0">
+                <Chip
+                  label={topic}
+                  onClick={() =>
+                    posthog.capture("topic_chip_clicked", {
+                      topic,
+                    })
+                  }
+                />
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label="Show more topics"
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink"
+            onClick={showMoreTopics}
+          >
+            <ChevronRight className="size-4" strokeWidth={2} aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          aria-label="Show more topics"
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink"
-          onClick={showMoreTopics}
-        >
-          <ChevronRight className="size-4" strokeWidth={2} aria-hidden="true" />
-        </button>
-      </div> : null}
+      ) : null}
     </header>
   );
 }

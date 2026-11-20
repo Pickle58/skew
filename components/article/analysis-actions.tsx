@@ -24,19 +24,3 @@ export function BiasMethodologyButton({ articleId, biasLabel }: AnalysisActionsP
     </Button>
   );
 }
-
-export function AnalysisFeedbackButton({ articleId }: { articleId: string }) {
-  return (
-    <Button
-      appearance="outline"
-      className="mt-4"
-      onClick={() =>
-        posthog.capture("analysis_feedback_clicked", {
-          article_id: articleId,
-        })
-      }
-    >
-      Provide Feedback
-    </Button>
-  );
-}

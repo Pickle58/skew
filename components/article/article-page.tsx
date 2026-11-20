@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Info } from "lucide-react";
-import { AnalysisFeedbackButton, BiasMethodologyButton } from "@/components/article/analysis-actions";
+import { BiasMethodologyButton } from "@/components/article/analysis-actions";
 import { ArticleActions, OriginalArticleLink } from "@/components/article/article-actions";
 import { BiasRows } from "@/components/article/bias-rows";
 import { NewsletterForm } from "@/components/article/newsletter-form";
@@ -188,7 +188,6 @@ export function ArticlePage({ article, related }: ArticlePageProps) {
                 ))}
               </div>
               <p className="mt-3 text-[11px] leading-[1.4] text-muted italic">AI summaries can make mistakes.</p>
-              <AnalysisFeedbackButton articleId={article.id} />
             </section>
 
             <section className="rounded-lg border border-line bg-panel p-4">
