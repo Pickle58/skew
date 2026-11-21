@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import { PostHogUserIdentification } from "@/components/auth/sign-up-tracker";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <PostHogUserIdentification />
           {children}
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
